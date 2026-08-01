@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Palworld OCG Mobile Companion</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { touch-action: manipulation; user-select: none; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Header Navigation -->
+  <header class="bg-slate-800 border-b border-slate-700 p-3 flex justify-between items-center sticky top-0 z-50">
+    <h1 class="font-bold text-lg text-amber-400">Palworld OCG Companion</h1>
+    <div class="flex gap-2">
+      <button onclick="switchTab('tracker')" id="tab-tracker" class="px-3 py-1 text-sm rounded bg-amber-500 font-bold text-slate-900">Tracker</button>
+      <button onclick="switchTab('builder')" id="tab-builder" class="px-3 py-1 text-sm rounded bg-slate-700 font-bold text-slate-300">Deck Builder</button>
+    </div>
+  </header>
+
+  <!-- MATCH TRACKER SECTION -->
+  <main id="view-tracker" class="flex-1 flex flex-col p-3 gap-3">
+    <!-- Top Utility Bar: Timer, Day/Night, Reset -->
+    <div class="bg-slate-800 rounded-xl p-3 flex justify-between items-center border border-slate-700">
+      <div class="flex items-center gap-2">
+        <button id="daynight-btn" onclick="toggleDayNight()" class="bg-amber-600 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider">☀️ Day</button>
+        <button id="phase-btn" onclick="nextPhase()" class="bg-indigo-600 px-3 py-1 rounded text-xs font-bold">Phase: Stand</button>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="timer" class="font-mono text-lg font-bold text-emerald-400">30:00</span>
+        <button onclick="toggleTimer()" id="timer-btn" class="bg-slate-700 px-2 py-1 text-xs rounded">Start</button>
+        <button onclick="resetMatch()" class="bg-red-900/50 text-red-300 px-2 py-1 text-xs rounded border border-red-700">Reset</button>
+      </div>
+    </div>
+
+    <!-- Opponent Area (Player 2 - Inverted View optional) -->
+    <div class="flex-1 bg-slate-800/80 rounded-2xl p-4 flex flex-col justify-between border border-slate-700 relative overflow-hidden">
+      <div class="flex justify-between items-center">
+        <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Player 2 (Opponent)</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-indigo-300 font-semibold">Souls: <b id="p2-souls" class="text-indigo-400 text-base">0</b>/10</span>
+          <button onclick="adjustSouls(2, 1)" class="bg-indigo-700 w-6 h-6 rounded font-bold text-xs">+</button>
+          <button onclick="adjustSouls(2, -1)" class="bg-slate-700 w-6 h-6 rounded font-bold text-xs">-</button>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center my-2">
+        <button onclick="adjustLife(2, -1)" class="w-16 h-16 bg-red-600/30 text-red-400 border border-red-500/50 rounded-2xl text-3xl font-extrabold">-</button>
+        <div class="text-center">
+          <span id="p2-hp" class="text-6xl font-black text-amber-400">10</span>
+          <p class="text-xs text-slate-400 mt-1">LIFE</p>
+        </div>
+        <button onclick="adjustLife(2, 1)" class="w-16 h-16 bg-emerald-600/30 text-emerald-400 border border-emerald-500/50 rounded-2xl text-3xl font-extrabold">+</button>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="damageCheck(2)" class="text-xs bg-slate-700 px-3 py-1 rounded-lg border border-slate-600 text-slate-300">💥 Damage Check</button>
+      </div>
+    </div>
+
+    <!-- Divider / Phase Display -->
+    <div class="text-center text-xs font-semibold text-slate-500 uppercase tracking-widest my-1">
+      Current Turn: <span id="current-player-text" class="text-amber-400">Player 1</span>
+      <button onclick="passTurn()" class="ml-2 bg-amber-500 text-slate-900 px-2 py-0.5 rounded font-bold text-xs">Pass Turn</button>
+    </div>
+
+    <!-- You (Player 1) -->
+    <div class="flex-1 bg-slate-800/80 rounded-2xl p-4 flex flex-col justify-between border border-amber-500/30 relative overflow-hidden">
+      <div class="flex justify-between items-center">
+        <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">Player 1 ( You )</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-indigo-300 font-semibold">Souls: <b id="p1-souls" class="text-indigo-400 text-base">0</b>/10</span>
+          <button onclick="adjustSouls(1, 1)" class="bg-indigo-700 w-6 h-6 rounded font-bold text-xs">+</button>
+          <button onclick="adjustSouls(1, -1)" class="bg-slate-700 w-6 h-6 rounded font-bold text-xs">-</button>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center my-2">
+        <button onclick="adjustLife(1, -1)" class="w-16 h-16 bg-red-600/30 text-red-400 border border-red-500/50 rounded-2xl text-3xl font-extrabold">-</button>
+        <div class="text-center">
+          <span id="p1-hp" class="text-6xl font-black text-amber-400">10</span>
+          <p class="text-xs text-slate-400 mt-1">LIFE</p>
+        </div>
+        <button onclick="adjustLife(1, 1)" class="w-16 h-16 bg-emerald-600/30 text-emerald-400 border border-emerald-500/50 rounded-2xl text-3xl font-extrabold">+</button>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <button onclick="damageCheck(1)" class="text-xs bg-slate-700 px-3 py-1 rounded-lg border border-slate-600 text-slate-300">💥 Damage Check</button>
+        <div id="p1-check-output" class="text-xs text-amber-300 font-mono"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- DECK BUILDER SECTION -->
+  <main id="view-builder" class="flex-1 flex-col p-3 gap-3 hidden">
+    <!-- Validation Summary Card -->
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <h2 class="font-bold text-base text-amber-400 mb-2">Deck Validation Status</h2>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <div id="val-main" class="p-2 rounded bg-slate-900 border border-slate-700">Main Deck: 0 / 50</div>
+        <div id="val-soul" class="p-2 rounded bg-slate-900 border border-slate-700">Soul Deck: 0 / 10</div>
+        <div id="val-colors" class="p-2 rounded bg-slate-900 border border-slate-700">Colors: 0 / 2 Max</div>
+        <div id="val-lucky" class="p-2 rounded bg-slate-900 border border-slate-700">Lucky Pals: 0 / 8 Max</div>
+      </div>
+    </div>
+
+    <!-- Add Card Form -->
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 flex flex-col gap-3">
+      <h3 class="font-bold text-sm text-slate-300">Add Card to Deck</h3>
+      <input id="card-name" type="text" placeholder="Card Name (e.g., Lamball, Jetragon)" class="bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-100" />
+      
+      <div class="grid grid-cols-2 gap-2">
+        <select id="card-type" class="bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-100">
+          <option value="Pal">Pal</option>
+          <option value="Structure">Structure</option>
+          <option value="Gear">Gear</option>
+          <option value="Event">Event</option>
+          <option value="Soul">Soul (Soul Deck)</option>
+        </select>
+
+        <select id="card-color" class="bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-100">
+          <option value="Red">Red</option>
+          <option value="Blue">Blue</option>
+          <option value="Green">Green</option>
+          <option value="Purple">Purple</option>
+          <option value="Colorless">Colorless</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="card-lucky" class="w-4 h-4 rounded" />
+        <label for="card-lucky" class="text-xs text-amber-300">Is Lucky Pal?</label>
+      </div>
+
+      <button onclick="addCard()" class="bg-amber-500 text-slate-900 font-bold py-2 rounded text-sm mt-1">Add Card</button>
+    </div>
+
+    <!-- Deck List Output -->
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 flex-1">
+      <h3 class="font-bold text-sm text-slate-300 mb-2">Current Card List</h3>
+      <div id="deck-list" class="flex flex-col gap-2 text-sm max-h-60 overflow-y-auto">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </main>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // State Variables
+    let currentTab = 'tracker';
+    let isDay = true;
+    let phases = ['Stand', 'Draw', 'Soul', 'Main', 'End'];
+    let phaseIdx = 0;
+    let activePlayer = 1;
+
+    let p1 = { hp: 10, souls: 0 };
+    let p2 = { hp: 10, souls: 1 }; // Player 2 starting bonus +1 soul
+    
+    let timerSec = 1800; // 30 minutes
+    let timerInterval = null;
+
+    let deck = [];
+
+    // Tab Switching
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('view-tracker').style.display = tab === 'tracker' ? 'flex' : 'none';
+      document.getElementById('view-builder').style.display = tab === 'builder' ? 'flex' : 'none';
+
+      document.getElementById('tab-tracker').className = tab === 'tracker' ? 'px-3 py-1 text-sm rounded bg-amber-500 font-bold text-slate-900' : 'px-3 py-1 text-sm rounded bg-slate-700 font-bold text-slate-300';
+      document.getElementById('tab-builder').className = tab === 'builder' ? 'px-3 py-1 text-sm rounded bg-amber-500 font-bold text-slate-900' : 'px-3 py-1 text-sm rounded bg-slate-700 font-bold text-slate-300';
+    }
+
+    // Tracker Functions
+    function updateUI() {
+      document.getElementById('p1-hp').innerText = p1.hp;
+      document.getElementById('p2-hp').innerText = p2.hp;
+      document.getElementById('p1-souls').innerText = p1.souls;
+      document.getElementById('p2-souls').innerText = p2.souls;
+      document.getElementById('current-player-text').innerText = `Player ${activePlayer}`;
+      document.getElementById('phase-btn').innerText = `Phase: ${phases[phaseIdx]}`;
+    }
+
+    function adjustLife(player, delta) {
+      if (player === 1) p1.hp = Math.max(0, p1.hp + delta);
+      if (player === 2) p2.hp = Math.max(0, p2.hp + delta);
+      updateUI();
+    }
+
+    function adjustSouls(player, delta) {
+      if (player === 1) p1.souls = Math.min(10, Math.max(0, p1.souls + delta));
+      if (player === 2) p2.souls = Math.min(10, Math.max(0, p2.souls + delta));
+      updateUI();
+    }
+
+    function toggleDayNight() {
+      isDay = !isDay;
+      const btn = document.getElementById('daynight-btn');
+      btn.innerText = isDay ? '☀️ Day' : '🌙 Night';
+      btn.className = isDay ? 'bg-amber-600 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider' : 'bg-indigo-900 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider border border-indigo-500';
+    }
+
+    function nextPhase() {
+      phaseIdx = (phaseIdx + 1) % phases.length;
+      if (phases[phaseIdx] === 'Soul') {
+        // Automatically give +2 Souls in Soul Phase
+        if (activePlayer === 1) p1.souls = Math.min(10, p1.souls + 2);
+        else p2.souls = Math.min(10, p2.souls + 2);
+      }
+      updateUI();
+    }
+
+    function passTurn() {
+      activePlayer = activePlayer === 1 ? 2 : 1;
+      phaseIdx = 0; // Reset to Stand Phase
+      updateUI();
+    }
+
+    function damageCheck(player) {
+      const strike = prompt("Enter Attacking Pal's Strike value (cards to reveal):", "1");
+      if (!strike) return;
+      alert(`Player ${player}: Reveal top ${strike} card(s) from deck.\nIf any revealed card is a Lucky Pal, all damage is canceled!`);
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('timer-btn');
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        btn.innerText = 'Start';
+      } else {
+        btn.innerText = 'Pause';
+        timerInterval = setInterval(() => {
+          if (timerSec > 0) {
+            timerSec--;
+            let m = Math.floor(timerSec / 60);
+            let s = timerSec % 60;
+            document.getElementById('timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+          } else {
+            clearInterval(timerInterval);
+            alert("Match Time Expired!");
+          }
+        }, 1000);
+      }
+    }
+
+    function resetMatch() {
+      if (confirm("Reset current game state?")) {
+        p1 = { hp: 10, souls: 0 };
+        p2 = { hp: 10, souls: 1 };
+        activePlayer = 1;
+        phaseIdx = 0;
+        timerSec = 1800;
+        updateUI();
+      }
+    }
+
+    // Deck Builder Functions
+    function addCard() {
+      const name = document.getElementById('card-name').value.trim();
+      const type = document.getElementById('card-type').value;
+      const color = document.getElementById('card-color').value;
+      const isLucky = document.getElementById('card-lucky').checked;
+
+      if (!name) return alert("Enter card name");
+
+      // Count existing copies
+      const existingCopies = deck.filter(c => c.name.toLowerCase() === name.toLowerCase()).length;
+      if (existingCopies >= 4) {
+        return alert("Rule Limit: Maximum 4 copies per card name!");
+      }
+
+      deck.push({ id: Date.now(), name, type, color, isLucky });
+      document.getElementById('card-name').value = '';
+      document.getElementById('card-lucky').checked = false;
+      renderDeck();
+    }
+
+    function removeCard(id) {
+      deck = deck.filter(c => c.id !== id);
+      renderDeck();
+    }
+
+    function renderDeck() {
+      const mainCards = deck.filter(c => c.type !== 'Soul');
+      const soulCards = deck.filter(c => c.type === 'Soul');
+      const luckyCards = deck.filter(c => c.isLucky && c.type !== 'Soul');
+
+      // Colors used (excluding colorless)
+      const colors = [...new Set(mainCards.map(c => c.color).filter(col => col !== 'Colorless'))];
+
+      // Update Validators
+      document.getElementById('val-main').innerText = `Main Deck: ${mainCards.length} / 50`;
+      document.getElementById('val-main').className = mainCards.length === 50 ? 'p-2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700' : 'p-2 rounded bg-slate-900 border border-slate-700';
+
+      document.getElementById('val-soul').innerText = `Soul Deck: ${soulCards.length} / 10`;
+      document.getElementById('val-soul').className = soulCards.length === 10 ? 'p-2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700' : 'p-2 rounded bg-slate-900 border border-slate-700';
+
+      document.getElementById('val-colors').innerText = `Colors: ${colors.length} / 2 Max`;
+      document.getElementById('val-colors').className = colors.length <= 2 ? 'p-2 rounded bg-slate-900 border border-slate-700' : 'p-2 rounded bg-red-950 text-red-300 border border-red-700';
+
+      document.getElementById('val-lucky').innerText = `Lucky Pals: ${luckyCards.length} / 8 Max`;
+      document.getElementById('val-lucky').className = luckyCards.length <= 8 ? 'p-2 rounded bg-slate-900 border border-slate-700' : 'p-2 rounded bg-red-950 text-red-300 border border-red-700';
+
+      // Render List
+      const listEl = document.getElementById('deck-list');
+      listEl.innerHTML = deck.map(c => `
+        <div class="flex justify-between items-center bg-slate-900 p-2 rounded border border-slate-700">
+          <div>
+            <span class="font-bold text-slate-100">${c.name}</span>
+            <span class="text-xs text-slate-400 ml-2">(${c.type} • ${c.color}${c.isLucky ? ' • Lucky' : ''})</span>
+          </div>
+          <button onclick="removeCard(${c.id})" class="text-red-400 text-xs px-2 py-1 bg-red-950/40 rounded border border-red-800">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    // Init
+    updateUI();
+  </script>
+</body>
+</html>
